@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>サンラッキー野方店 ジャグラー＆ハナビ台データ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+ :root{color-scheme:light;--red:#c0392b;--grn:#1e8449;--bg:#f5f5f6;--ink:#222;--sub:#666;--line:#e2e2e2}
+ *{box-sizing:border-box}body{margin:0;font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:var(--ink);background:#fff}
+ header{background:linear-gradient(90deg,#c0392b,#e67e22);color:#fff;padding:13px 16px}
+ header h1{margin:0;font-size:16px}header .meta{font-size:11px;opacity:.95;margin-top:3px;line-height:1.5}
+ .nav{display:flex;gap:6px;padding:10px 14px 0;position:sticky;top:0;background:var(--bg);z-index:10;flex-wrap:wrap}
+ .nav button{flex:1;min-width:120px;max-width:200px;cursor:pointer;border:1px solid #ccc;background:#fff;border-radius:9px 9px 0 0;padding:9px;font-size:13px;font-weight:bold}
+ .nav button.active{background:var(--red);color:#fff;border-color:var(--red)}
+ .wrap{display:flex;gap:14px;padding:12px 14px 26px;align-items:flex-start;flex-wrap:wrap;max-width:1050px;margin:0 auto}
+ .side{flex:0 0 240px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px;max-height:82vh;overflow:auto}
+ .side h3{margin:8px 6px 4px;font-size:12px;color:var(--red);border-bottom:2px solid var(--red);padding-bottom:3px}
+ .side .mt{font-size:10px;color:var(--sub);font-weight:normal}
+ .taprow{display:flex;flex-wrap:wrap;gap:5px;margin:0 4px 8px}
+ .tap{cursor:pointer;border:1px solid #ccc;background:#fafafa;border-radius:7px;padding:6px 8px;font-family:Arial;font-size:13px;min-width:50px;text-align:center}
+ .tap.up{border-color:#8fce9f}.tap.dn{border-color:#e6a6a6}
+ .tap.active{background:var(--red);color:#fff;border-color:var(--red);font-weight:bold}
+ .main{flex:1 1 460px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;min-width:320px}
+ .main h2{margin:0 0 2px;font-size:17px}.main .sub{color:var(--sub);font-size:12px;margin-bottom:10px}
+ .cards{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+ .card{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;text-align:center;min-width:90px;flex:1}
+ .card .n{font-size:19px;font-weight:bold;font-family:Arial}.card .l{font-size:10.5px;color:var(--sub)}
+ .pos{color:var(--grn)}.neg{color:var(--red)}
+ h3.sec{font-size:13px;margin:14px 0 6px;border-left:4px solid var(--red);padding-left:8px}
+ .chartbox{position:relative;height:300px}.small{position:relative;height:220px}
+ table{border-collapse:collapse;width:100%;font-size:11.5px;margin-top:6px}
+ th,td{border:1px solid var(--line);padding:4px 5px;text-align:center}th{background:#f0f0f0}
+ .today{background:#fdecea}
+ .note{font-size:11px;color:var(--sub);line-height:1.7;margin-top:10px}
+ ul{margin:6px 0 0;padding-left:20px;font-size:13px;line-height:1.8}b.hl{color:var(--red)}
+ .hidden{display:none}
+ #status{padding:20px;text-align:center;color:var(--sub);font-size:14px}
+ .pickbox{background:#fff8e1;border:1px solid #f1d68a;border-radius:10px;padding:10px 12px;margin-bottom:10px}
+ .revealbox{background:#eef7ff;border:1px solid #b9d9f5;border-radius:10px;padding:10px 12px;margin:10px 14px 0;max-width:1022px}
+ @media(max-width:700px){.side{flex-basis:100%;max-height:none}.chartbox{height:260px}table{font-size:10.5px}}
+</style></head><body>
+<header><h1>サンラッキー野方店　ジャグラー＆ハナビ 台データ</h1>
+<div class="meta" id="hmeta">Boxの ジャグラー履歴.csv を読み込み中…（右上の再読み込みで最新化）</div></header>
+<div class="nav">
+ <button id="nb1" class="active" onclick="view('m')">台別グラフ(直近)</button>
+ <button id="nb4" onclick="view('f')">全日スランプ</button>
+ <button id="nb5" onclick="view('p')">店プロファイル</button>
+ <button id="nb2" onclick="view('s')">まとめ</button>
+ <button id="nb6" onclick="view('c')">据え置き/設定変更</button>
+ <button id="nb3" onclick="view('e')">設定・イベント分析</button>
+</div>
+<div id="status">データ取得中…</div>
+<div id="viewM" class="wrap hidden"><div class="side" id="side"></div><div class="main" id="main"></div></div>
+<div id="viewF" class="wrap hidden"><div class="side" id="sideF"></div><div class="main" id="mainF"></div></div>
+<div id="viewP" class="wrap hidden"><div class="main" style="flex:1 1 100%" id="prof"></div></div>
+<div id="viewS" class="wrap hidden"><div class="main" style="flex:1 1 100%" id="summary"></div></div>
+<div id="viewC" class="wrap hidden"><div class="main" style="flex:1 1 100%" id="carry"></div></div>
+<div id="viewE" class="wrap hidden"><div class="main" style="flex:1 1 100%" id="setting"></div></div>
+<script>
+const BOX_FILE_ID="2354582944522";
+const MODELS={
+ "ネオアイムジャグラーEX":{"reg":[439.8,399.6,331.0,315.1,255.0,255.0],"grape":[6.02,6.02,6.02,6.02,6.02,5.78]},
+ "マイジャグラーV":{"reg":[439.8,399.6,331.1,315.1,292.6,229.1],"grape":[5.90,5.86,5.83,5.83,5.83,5.66]},
+ "ハッピージャグラーV III":{"reg":[397.2,364.1,332.7,303.0,273.1,259.0],"grape":[6.05,6.04,6.02,5.90,5.81,5.75]},
+ "ファンキージャグラー2":{"reg":[439.8,399.6,366.1,322.6,299.3,262.1],"grape":[5.94,5.92,5.90,5.83,5.80,5.70]},
+ "ジャグラーガールズSS":{"reg":[381.0,350.5,316.6,281.3,270.8,252.1],"grape":[5.98,5.98,5.98,5.98,5.88,5.83]},
+ "ゴーゴージャグラー3":{"reg":[354.2,332.7,306.2,268.6,247.3,234.9],"grape":[6.25,6.20,6.15,6.07,6.00,5.92]}
+};
+const DISP={"SマイジャグラーVKD":"マイジャグラーV","Sファンキージャグラー2KT":"ファンキージャグラー2",
+ "L/ハナビ/KM":"ハナビ","SネオアイムジャグラーEX-KK":"ネオアイムジャグラーEX",
+ "SハッピージャグラーV III EA":"ハッピージャグラーV III","Sゴーゴージャグラー3KA":"ゴーゴージャグラー3",
+ "SジャグラーガールズSS-KH":"ジャグラーガールズSS"};
+const WD=["月","火","水","木","金","土","日"];const EVENT_DAYS=new Set([3,5,13,15,23,25]);
+let D=null,RAW=null,c1=null,c2=null,f1=null,f2=null,ph=null,sDone=false,eDone=false,fDone=false,pDone=false,cDone=false,curM=null,curF=null;
+function dm(m){return DISP[m]||m;}
+function num(x){if(x===undefined||x===null||x==='')return null;var v=parseInt(x,10);return isNaN(v)?null:v;}
+function wd(d){var a=d.split('-');var dt=new Date(+a[0],+a[1]-1,+a[2]);return WD[(dt.getDay()+6)%7];}
+function lab(d){return d.slice(5)+"("+wd(d)+")";}
+function dom(d){return parseInt(d.slice(8,10),10);}
+function rnd(x){return Math.round(x);}
+function parseCSV(txt){var lines=txt.replace(/\r/g,'').split('\n').filter(l=>l.length>0);var head=lines[0].split(',');var out=[];
+ for(var i=1;i<lines.length;i++){var p=lines[i].split(',');if(p.length<3)continue;var o={};for(var j=0;j<head.length;j++)o[head[j]]=(p[j]!==undefined?p[j]:'');out.push(o);}return out;}
+/* ---- 集計: gen_viewer.py と同じ構造を生成 ---- */
+function buildData(rows){
+ const dates=[...new Set(rows.map(r=>r["日付"]))].sort();
+ const partialSet=new Set(rows.filter(r=>r["本日途中"]==='1').map(r=>r["日付"]));
+ const partialDate=partialSet.size?[...partialSet].sort().slice(-1)[0]:null;
+ const recent=dates.slice(-7);const comp=recent.filter(d=>d!==partialDate);const today=partialDate;
+ const dlabel=recent.map(lab);
+ const M={};rows.forEach(r=>{const m=r["機種"],dai=r["台番号"];(M[m]=M[m]||{});(M[m][dai]=M[m][dai]||{})[r["日付"]]=r;});
+ const machines={},model_machines={};
+ for(const model in M){for(const dai in M[model]){const byd=M[model][dai];
+  const daily=recent.map(d=>{const row=byd[d]||{};return {sabe:num(row["差枚"]),BONUS:num(row["BONUS"])||0,BIG:num(row["BIG"]),REG:num(row["REG"]),gou:row["合成確率"]||"",g:num(row["累計ゲーム"]),partial:(d===today)};});
+  const v6=daily.filter(x=>!x.partial&&x.sabe!=null).map(x=>x.sabe);
+  const c6=v6.reduce((a,b)=>a+b,0);const pos=v6.filter(v=>v>0).length;
+  const dd=dm(model);machines[dai]={model:dd,dai:dai,daily:daily,c6:c6,pos:pos,best:v6.length?Math.max(...v6):0,worst:v6.length?Math.min(...v6):0,today:daily[daily.length-1].sabe};
+  (model_machines[dd]=model_machines[dd]||[]).push(dai);}}
+ const model_tot={};for(const m in model_machines)model_tot[m]=model_machines[m].reduce((a,d)=>a+machines[d].c6,0);
+ const model_order=Object.keys(model_tot).sort((a,b)=>model_tot[b]-model_tot[a]);
+ model_order.forEach(m=>model_machines[m].sort());
+ const model_rows=model_order.map(m=>[m,model_tot[m],model_machines[m].length,rnd(model_tot[m]/model_machines[m].length)]);
+ const hall=Object.values(model_tot).reduce((a,b)=>a+b,0);const allm=Object.values(machines);
+ const pk=x=>[x.dai,x.model,x.c6,x.pos];
+ const top=[...allm].sort((a,b)=>b.c6-a.c6).slice(0,6).map(pk);
+ const worst=[...allm].sort((a,b)=>a.c6-b.c6).slice(0,6).map(pk);
+ const stable=[...allm].sort((a,b)=>b.c6-a.c6).filter(x=>x.pos>=5).map(pk);
+ const todaytop=allm.filter(x=>x.today!=null).sort((a,b)=>b.today-a.today).slice(0,6).map(x=>[x.dai,x.model,x.today]);
+ /* setting */
+ const latest=partialDate;const compdates=partialDate?dates.filter(d=>d!==partialDate):dates.slice();
+ const ev_dates=compdates.filter(d=>EVENT_DAYS.has(dom(d)));const nm_dates=compdates.filter(d=>!EVENT_DAYS.has(dom(d)));
+ const bykey={};rows.forEach(r=>{const k=r["機種"]+"|"+r["台番号"];(bykey[k]=bykey[k]||{})[r["日付"]]=r;});
+ function pool(bd,ds){let s=0,g=0,b=0,rg=0,n=0;ds.forEach(d=>{const r=bd[d];if(!r)return;const sv=num(r["差枚"]);if(sv==null)return;s+=sv;g+=num(r["累計ゲーム"])||0;b+=num(r["BONUS"])||0;rg+=num(r["REG"])||0;n++;});return [s,g,b,rg,n];}
+ let setrows=[];for(const k in bykey){const parts=k.split("|");const model=parts[0],dai=parts[1];const bd=bykey[k];
+  const e=pool(bd,ev_dates),nmp=pool(bd,nm_dates);if(e[4]===0)continue;
+  setrows.push({dai:dai,model:dm(model),en:e[4],ev_avg:rnd(e[0]/e[4]),nm_avg:(nmp[4]?rnd(nmp[0]/nmp[4]):null),
+   diff:(nmp[4]?rnd(e[0]/e[4]-nmp[0]/nmp[4]):null),ev_gou:(e[2]?rnd(e[1]/e[2]*10)/10:null),ev_reg:(e[3]?rnd(e[1]/e[3]*10)/10:null)});}
+ setrows.sort((a,b)=>b.ev_avg-a.ev_avg);
+ function hall_day(d){let s=0;rows.forEach(r=>{if(r["日付"]===d)s+=(num(r["差枚"])||0);});return s;}
+ const hallDayCache={};dates.forEach(d=>hallDayCache[d]=hall_day(d));
+ function hall_avg(ds){if(!ds.length)return null;let t=0;ds.forEach(d=>t+=hallDayCache[d]);return rnd(t/ds.length);}
+ const setting={event_days:ev_dates.map(d=>d.slice(5)),normal_days:nm_dates.map(d=>d.slice(5)),hall_ev:hall_avg(ev_dates),hall_nm:hall_avg(nm_dates),rows:setrows};
+ /* full */
+ const alldates=dates.slice();const alllabel=alldates.map(lab);
+ const full_machines={};
+ for(const model in M){for(const dai in M[model]){const byd=M[model][dai];
+  let run=0;const sabe=[],cum=[],big=[],reg=[],gou=[],garr=[];
+  alldates.forEach(d=>{const row=byd[d]||{};const s=num(row["差枚"]);sabe.push(s);if(s!=null)run+=s;cum.push(run);
+   big.push(num(row["BIG"]));reg.push(num(row["REG"]));gou.push(row["合成確率"]||"");garr.push(num(row["累計ゲーム"]));});
+  const confs=compdates.map(d=>num((byd[d]||{})["差枚"])).filter(v=>v!=null);
+  full_machines[dai]={model:dm(model),sabe:sabe,cum:cum,big:big,reg:reg,gou:gou,g:garr,
+   ctot:confs.reduce((a,b)=>a+b,0),pos:confs.filter(v=>v>0).length,ndays:confs.length,
+   best:confs.length?Math.max(...confs):0,worst:confs.length?Math.min(...confs):0};}}
+ const hall_daily=alldates.map(d=>hallDayCache[d]);
+ const daymeta=alldates.map(d=>({label:lab(d),ev:EVENT_DAYS.has(dom(d)),partial:(d===latest)}));
+ function avg(l){l=l.filter(x=>x!=null);return l.length?rnd(l.reduce((a,b)=>a+b,0)/l.length):null;}
+ const wd_days={};compdates.forEach(d=>{(wd_days[wd(d)]=wd_days[wd(d)]||[]).push(hallDayCache[d]);});
+ const weekday_rows=WD.filter(w=>wd_days[w]).map(w=>[w,avg(wd_days[w]),wd_days[w].length]);
+ const end_days={};compdates.forEach(d=>{const k=dom(d)%10;(end_days[k]=end_days[k]||[]).push(hallDayCache[d]);});
+ const ending_rows=Object.keys(end_days).map(Number).sort((a,b)=>a-b).map(k=>[String(k),avg(end_days[k]),end_days[k].length]);
+ const full={dlabel:alllabel,machines:full_machines,hall_daily:hall_daily,daymeta:daymeta,ndays:alldates.length,nconf:compdates.length,
+  partial:(latest?latest.slice(5)+"("+wd(latest)+")":null),profile:{weekday:weekday_rows,ending:ending_rows,
+   evnm:{ev_avg:hall_avg(ev_dates),ev_n:ev_dates.length,nm_avg:hall_avg(nm_dates),nm_n:nm_dates.length}}};
+ return {models:MODELS,machines:machines,model_order:model_order,model_machines:model_machines,dlabel:dlabel,
+  period:lab(recent[0])+"〜"+lab(recent[recent.length-1]),comp:(comp.length?recent[0].slice(5)+"-"+comp[comp.length-1].slice(5):""),
+  setting:setting,full:full,summary:{model_rows:model_rows,hall:hall,nall:Object.keys(machines).length,top:top,worst:worst,stable:stable,todaytop:todaytop}};
+}
+/* ---- 指標 ---- */
+function sg(v){return v>0?('+'+v):(''+v);}function cl(v){return v>0?'pos':(v<0?'neg':'');}
+function rate(g,n){return (g&&n>0)?('1/'+(g/n).toFixed(1)):'-';}
+function grapeN(s,g,b,r){if(s==null||!g)return null;var v=(s+3*g*(1-1/7.3)-252*(b||0)-96*(r||0))/8;return v>0?v:null;}
+function grapeR(s,g,b,r){var v=grapeN(s,g,b,r);return v?('1/'+(g/v).toFixed(2)):'-';}
+function isJug(model){return !!D.models[model];}
+function interpSet(arr,v){if(v>=arr[0])return 1;if(v<=arr[5])return 6;for(var i=0;i<5;i++){if(arr[i]>=v&&v>=arr[i+1]){return (i+1)+(arr[i]-v)/(arr[i]-arr[i+1]);}}return 6;}
+function estSet(model,s,g,b,r){var Mo=D.models[model];if(!Mo||!g)return {t:'—'};var o={reg:null,grp:null};
+ if(r>0&&g>=2000)o.reg=interpSet(Mo.reg,g/r);var gc=grapeN(s,g,b,r);if(gc&&g>=3000)o.grp=interpSet(Mo.grape,g/gc);
+ var c=null;if(o.reg!=null&&o.grp!=null)c=o.reg*0.65+o.grp*0.35;else if(o.reg!=null)c=o.reg;else if(o.grp!=null)c=o.grp;
+ if(c==null)return {t:'G不足',reg:o.reg,grp:o.grp};return {t:'設定'+c.toFixed(1)+'相当',c:c,reg:o.reg,grp:o.grp};}
+function estCell(model,s,g,b,r){if(!isJug(model))return '-';return estSet(model,s,g,b,r).t;}
+function tip(model,s,g,b,r){var a=['当日差枚 '+(s==null?'-':sg(s)),'総回転数 '+(g||0)+'G','BIG '+rate(g,b),'REG '+rate(g,r)];
+ if(isJug(model)){a.push('ブドウ '+grapeR(s,g,b,r));var e=estSet(model,s,g,b,r);
+  var d=(e.reg!=null||e.grp!=null)?(' (REG'+(e.reg!=null?e.reg.toFixed(1):'-')+'/ブ'+(e.grp!=null?e.grp.toFixed(1):'-')+')'):'';
+  a.push('当日予想設定 '+e.t+d);}else a.push('(ハナビはブドウ/設定 対象外)');return a;}
+function runCum(S){var cs=[],r=0;for(var i=0;i<S.length;i++){if(S[i]!=null)r+=S[i];cs.push(r);}return cs;}
+function view(v){var map={m:'nb1',f:'nb4',p:'nb5',s:'nb2',c:'nb6',e:'nb3'};for(var k in map)document.getElementById(map[k]).classList.toggle('active',k===v);
+ document.getElementById('viewM').classList.toggle('hidden',v!=='m');document.getElementById('viewF').classList.toggle('hidden',v!=='f');
+ document.getElementById('viewP').classList.toggle('hidden',v!=='p');document.getElementById('viewS').classList.toggle('hidden',v!=='s');
+ document.getElementById('viewC').classList.toggle('hidden',v!=='c');
+ document.getElementById('viewE').classList.toggle('hidden',v!=='e');
+ if(v==='s'&&!sDone){renderSummary();sDone=true;}if(v==='e'&&!eDone){renderSetting();eDone=true;}
+ if(v==='c'&&!cDone){renderCarry();cDone=true;}
+ if(v==='f'&&!fDone){buildSideF();fDone=true;}if(v==='p'&&!pDone){renderProf();pDone=true;}}
+function renderSetting(){const S=D.setting;let rr='';S.rows.forEach((x,i)=>{const badge=i<3?' style="background:#fff6d6"':'';
+  rr+='<tr'+badge+'><td>'+(i+1)+'</td><td>'+x.dai+'</td><td style="text-align:left">'+x.model+'</td><td>'+x.en+'</td><td class="'+cl(x.ev_avg)+'">'+sg(x.ev_avg)+'</td><td>'+(x.ev_gou?('1/'+x.ev_gou):'-')+'</td><td>'+(x.ev_reg?('1/'+x.ev_reg):'-')+'</td><td class="'+(x.nm_avg==null?'':cl(x.nm_avg))+'">'+(x.nm_avg==null?'-':sg(x.nm_avg))+'</td><td class="'+(x.diff==null?'':cl(x.diff))+'">'+(x.diff==null?'-':sg(x.diff))+'</td></tr>';});
+ document.getElementById('setting').innerHTML='<h2>設定・イベント分析</h2>'
+ +'<div class="note">イベント日＝毎月 <b>3・5・13・15・23・25日</b>。現在サンプル: イベント'+S.event_days.length+'日 ('+S.event_days.join(', ')+') / 通常'+S.normal_days.length+'日。<b class="hl">日数が増えるほど精度が上がります（特にREG率は複数日ためて判断）。</b></div>'
+ +'<div class="cards"><div class="card"><div class="n '+cl(S.hall_ev)+'">'+(S.hall_ev==null?'-':sg(S.hall_ev))+'</div><div class="l">イベント日 ホール平均差枚/日</div></div>'
+ +'<div class="card"><div class="n '+cl(S.hall_nm)+'">'+(S.hall_nm==null?'-':sg(S.hall_nm))+'</div><div class="l">通常日 ホール平均差枚/日</div></div></div>'
+ +'<h3 class="sec">設定が入っていそうな台ランキング（イベント日の平均差枚順）</h3>'
+ +'<div class="note">見方: <b>イベント平均差枚がプラス</b>＋<b>REG率・合成率が軽い(1/の数字が小さい)</b>＋<b>差(イベント−通常)がプラス</b>＝設定が入りやすい候補。上位3台に色。</div>'
+ +'<table><thead><tr><th>順</th><th>台</th><th>機種</th><th>ｲﾍﾞﾝﾄ日数</th><th>ｲﾍﾞﾝﾄ平均差枚</th><th>ｲﾍﾞﾝﾄ合成</th><th>ｲﾍﾞﾝﾄREG率</th><th>通常平均差枚</th><th>差(ｲﾍﾞﾝﾄ-通常)</th></tr></thead><tbody>'+rr+'</tbody></table>'
+ +'<div class="note">※これは推定です。ジャグラーは毎ゲーム独立の確率抽選で、1〜2日では設定は判断できません。イベント日を何回もためて「毎回上位に来る台番号」を探すのが狙い。将来を保証するものではありません。</div>';}
+function buildSide(){const s=document.getElementById('side');s.innerHTML='';
+ D.model_order.forEach(m=>{const h=document.createElement('h3');const mt=D.summary.model_rows.find(r=>r[0]===m);
+  h.innerHTML=m+' <span class="mt">('+mt[2]+'台 平均'+sg(mt[3])+')</span>';s.appendChild(h);
+  const row=document.createElement('div');row.className='taprow';
+  D.model_machines[m].forEach(dai=>{const mc=D.machines[dai];const b=document.createElement('div');
+   b.className='tap '+(mc.c6>0?'up':(mc.c6<0?'dn':''));b.textContent=dai;b.dataset.dai=dai;
+   b.onclick=()=>{document.querySelectorAll('#side .tap').forEach(x=>x.classList.remove('active'));b.classList.add('active');show(dai);};row.appendChild(b);});
+  s.appendChild(row);});
+ show(D.model_machines[D.model_order[0]][0]);}
+function show(dai){const mc=D.machines[dai];const jug=isJug(mc.model);
+ document.querySelectorAll('#side .tap').forEach(t=>t.classList.toggle('active',t.dataset.dai===dai));
+ let rows='';mc.daily.forEach((d,i)=>{const c=d.partial?' class="today"':'';
+  rows+='<tr'+c+'><td>'+D.dlabel[i]+(d.partial?'<br><span style="font-size:9px;color:#c0392b">途中</span>':'')+'</td>'
+   +'<td>'+(d.g==null?'-':d.g)+'</td><td class="'+cl(d.sabe)+'">'+(d.sabe==null?'-':sg(d.sabe))+'</td>'
+   +'<td>'+rate(d.g,d.BIG)+'</td><td>'+rate(d.g,d.REG)+'</td><td>'+(d.gou||'-')+'</td>'
+   +'<td>'+(jug?grapeR(d.sabe,d.g,d.BIG,d.REG):'-')+'</td><td>'+estCell(mc.model,d.sabe,d.g,d.BIG,d.REG)+'</td></tr>';});
+ document.getElementById('main').innerHTML='<h2>台番号 '+dai+'</h2><div class="sub">'+mc.model+'</div>'
+  +'<div class="cards"><div class="card"><div class="n '+cl(mc.c6)+'">'+sg(mc.c6)+'</div><div class="l">確定合計</div></div>'
+  +'<div class="card"><div class="n '+cl(mc.today)+'">'+(mc.today==null?'-':sg(mc.today))+'</div><div class="l">最新日(途中)</div></div>'
+  +'<div class="card"><div class="n">'+mc.pos+'</div><div class="l">勝ち日数</div></div>'
+  +'<div class="card"><div class="n '+cl(mc.best)+'">'+sg(mc.best)+'</div><div class="l">最高日</div></div>'
+  +'<div class="card"><div class="n '+cl(mc.worst)+'">'+sg(mc.worst)+'</div><div class="l">最低日</div></div></div>'
+  +'<h3 class="sec">累積差枚の推移(直近7日)　※点にカーソルで詳細</h3><div class="chartbox"><canvas id="cv1"></canvas></div>'
+  +'<h3 class="sec">日別差枚</h3><div class="small"><canvas id="cv2"></canvas></div>'
+  +'<h3 class="sec">日別データ</h3><table><thead><tr><th>日</th><th>総回転</th><th>差枚</th><th>BIG率</th><th>REG率</th><th>合成</th><th>ブドウ</th><th>予想設定</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  +'<div class="note">カーソルで各日の数値（総回転・BIG率・REG率・当日差枚・ブドウ率・予想設定）。予想設定は機種別ブドウ/REG確率と実測を照合(REG65%+ブドウ35%・G少なめは「G不足」)。'+(jug?'':'この機種(ハナビ)は対象外です。')+'</div>';
+ drawCum(mc);drawBar(mc);}
+function drawCum(mc){const S=mc.daily.map(d=>d.sabe),G=mc.daily.map(d=>d.g),B=mc.daily.map(d=>d.BIG),R=mc.daily.map(d=>d.REG);
+ const cs=runCum(S);curM={S:S,G:G,B:B,R:R,model:mc.model};const col=mc.c6>=0?'#1e8449':'#c0392b';if(c1)c1.destroy();
+ c1=new Chart(document.getElementById('cv1'),{type:'line',data:{labels:D.dlabel,datasets:[{data:cs,borderColor:col,backgroundColor:(mc.c6>=0?'rgba(30,132,73,.08)':'rgba(192,57,43,.08)'),fill:true,tension:.15,pointRadius:3,borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>D.dlabel[it[0].dataIndex],label:c=>{var i=c.dataIndex;return tip(curM.model,curM.S[i],curM.G[i],curM.B[i],curM.R[i]);}}}},scales:{y:{grid:{color:ctx=>ctx.tick.value===0?'#888':'#eee'}}}}});}
+function drawBar(mc){const vals=mc.daily.map(d=>d.sabe);const colors=vals.map(v=>v==null?'#ccc':(v>=0?'#1e8449':'#c0392b'));if(c2)c2.destroy();
+ c2=new Chart(document.getElementById('cv2'),{type:'bar',data:{labels:D.dlabel,datasets:[{data:vals.map(v=>v==null?0:v),backgroundColor:colors,borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'差枚 '+(c.parsed.y>0?'+':'')+c.parsed.y}}}}});}
+function buildSideF(){const s=document.getElementById('sideF');s.innerHTML='';
+ D.model_order.forEach(m=>{const h=document.createElement('h3');h.textContent=m;s.appendChild(h);
+  const row=document.createElement('div');row.className='taprow';
+  D.model_machines[m].forEach(dai=>{const mc=D.full.machines[dai];const b=document.createElement('div');
+   b.className='tap '+(mc.ctot>0?'up':(mc.ctot<0?'dn':''));b.textContent=dai;b.dataset.dai=dai;
+   b.onclick=()=>{document.querySelectorAll('#sideF .tap').forEach(x=>x.classList.remove('active'));b.classList.add('active');showF(dai);};row.appendChild(b);});
+  s.appendChild(row);});
+ showF(D.model_machines[D.model_order[0]][0]);}
+function showF(dai){const mc=D.full.machines[dai];const jug=isJug(mc.model);
+ document.querySelectorAll('#sideF .tap').forEach(t=>t.classList.toggle('active',t.dataset.dai===dai));
+ const L=D.full.dlabel;let rows='';
+ for(let i=0;i<L.length;i++){const p=!!(D.full.daymeta[i]&&D.full.daymeta[i].partial);const c=p?' class="today"':'';
+  rows+='<tr'+c+'><td>'+L[i]+(p?'<br><span style="font-size:9px;color:#c0392b">途中</span>':'')+'</td>'
+   +'<td>'+(mc.g[i]==null?'-':mc.g[i])+'</td><td class="'+cl(mc.sabe[i])+'">'+(mc.sabe[i]==null?'-':sg(mc.sabe[i]))+'</td>'
+   +'<td class="'+cl(mc.cum[i])+'">'+sg(mc.cum[i])+'</td><td>'+rate(mc.g[i],mc.big[i])+'</td><td>'+rate(mc.g[i],mc.reg[i])+'</td><td>'+(mc.gou[i]||'-')+'</td>'
+   +'<td>'+(jug?grapeR(mc.sabe[i],mc.g[i],mc.big[i],mc.reg[i]):'-')+'</td><td>'+estCell(mc.model,mc.sabe[i],mc.g[i],mc.big[i],mc.reg[i])+'</td></tr>';}
+ document.getElementById('mainF').innerHTML='<h2>台番号 '+dai+'</h2><div class="sub">'+mc.model+'　全'+D.full.nconf+'日確定'+(D.full.partial?(' ('+D.full.partial+'は途中)'):'（途中日なし・最新日まで確定）')+'</div>'
+  +'<div class="cards"><div class="card"><div class="n '+cl(mc.ctot)+'">'+sg(mc.ctot)+'</div><div class="l">確定合計差枚</div></div>'
+  +'<div class="card"><div class="n">'+mc.pos+'/'+mc.ndays+'</div><div class="l">勝ち日数</div></div>'
+  +'<div class="card"><div class="n '+cl(mc.best)+'">'+sg(mc.best)+'</div><div class="l">最高日</div></div>'
+  +'<div class="card"><div class="n '+cl(mc.worst)+'">'+sg(mc.worst)+'</div><div class="l">最低日</div></div></div>'
+  +'<h3 class="sec">スランプグラフ（累積差枚・全日）　※点にカーソルで詳細</h3><div class="chartbox"><canvas id="fcv1"></canvas></div>'
+  +'<h3 class="sec">日別差枚</h3><div class="small"><canvas id="fcv2"></canvas></div>'
+  +'<h3 class="sec">日別データ</h3><table><thead><tr><th>日</th><th>総回転</th><th>差枚</th><th>累積</th><th>BIG率</th><th>REG率</th><th>合成</th><th>ブドウ</th><th>予想設定</th></tr></thead><tbody>'+rows+'</tbody></table>'
+  +'<div class="note">カーソルで各日の数値。ブドウ率=当日差枚からの逆算(概算)。'+(jug?'':'この機種(ハナビ)は対象外。')+'</div>';
+ drawCumF(mc,L);
+ const cols=mc.sabe.map(v=>v==null?'#ccc':(v>=0?'#1e8449':'#c0392b'));if(f2)f2.destroy();
+ f2=new Chart(document.getElementById('fcv2'),{type:'bar',data:{labels:L,datasets:[{data:mc.sabe.map(v=>v==null?0:v),backgroundColor:cols,borderRadius:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'差枚 '+(c.parsed.y>0?'+':'')+c.parsed.y}}}}});}
+function drawCumF(mc,L){curF={S:mc.sabe,G:mc.g,B:mc.big,R:mc.reg,model:mc.model};const col=mc.ctot>=0?'#1e8449':'#c0392b';if(f1)f1.destroy();
+ f1=new Chart(document.getElementById('fcv1'),{type:'line',data:{labels:L,datasets:[{data:mc.cum,borderColor:col,backgroundColor:(mc.ctot>=0?'rgba(30,132,73,.08)':'rgba(192,57,43,.08)'),fill:true,tension:.12,pointRadius:2,borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>L[it[0].dataIndex],label:c=>{var i=c.dataIndex;return tip(curF.model,curF.S[i],curF.G[i],curF.B[i],curF.R[i]);}}}},scales:{y:{grid:{color:ctx=>ctx.tick.value===0?'#888':'#eee'}}}}});}
+function renderProf(){const P=D.full.profile;const e=P.evnm;
+ function trs(a){let h='';a.forEach(r=>{h+='<tr><td>'+r[0]+'</td><td class="'+cl(r[1])+'">'+(r[1]==null?'-':sg(r[1]))+'</td><td>'+r[2]+'</td></tr>';});return h;}
+ let mr='';D.summary.model_rows.forEach(r=>{mr+='<tr><td style="text-align:left">'+r[0]+'</td><td class="'+cl(r[1])+'">'+sg(r[1])+'</td><td>'+r[2]+'</td><td class="'+cl(r[3])+'">'+sg(r[3])+'</td></tr>';});
+ document.getElementById('prof').innerHTML='<h2>店プロファイル（確定'+D.full.nconf+'日）</h2>'
+ +'<div class="note">各区分の「ホール1日あたり平均差枚(対象台合計)」。プラス=客が勝ちやすい＝店が出す傾向。日数が少ないうちは<b>仮説</b>。</div>'
+ +'<h3 class="sec">ホール全体 日別合計差枚（★=イベント日 / 橙=本日途中）</h3><div class="small"><canvas id="pcvh"></canvas></div>'
+ +'<h3 class="sec">イベント日 vs 通常日</h3>'
+ +'<div class="cards"><div class="card"><div class="n '+cl(e.ev_avg)+'">'+(e.ev_avg==null?'-':sg(e.ev_avg))+'</div><div class="l">イベント日 平均/日 ('+e.ev_n+'日)</div></div>'
+ +'<div class="card"><div class="n '+cl(e.nm_avg)+'">'+(e.nm_avg==null?'-':sg(e.nm_avg))+'</div><div class="l">通常日 平均/日 ('+e.nm_n+'日)</div></div></div>'
+ +'<h3 class="sec">曜日別</h3><table><thead><tr><th>曜日</th><th>平均差枚/日</th><th>日数</th></tr></thead><tbody>'+trs(P.weekday)+'</tbody></table>'
+ +'<h3 class="sec">日付末尾別</h3><table><thead><tr><th>末尾</th><th>平均差枚/日</th><th>日数</th></tr></thead><tbody>'+trs(P.ending)+'</tbody></table>'
+ +'<h3 class="sec">機種別（直近7日確定合計）</h3><table><thead><tr><th>機種</th><th>合計</th><th>台数</th><th>1台平均</th></tr></thead><tbody>'+mr+'</tbody></table>'
+ +'<div class="note">※ジャグラーは毎ゲーム独立抽選。ここで見るのは「店がいつ・どの機種に設定を入れる傾向か」で、将来を保証しません。曜日・末尾は少数サンプルなので確定ではありません。</div>';
+ const F=D.full;const labels=F.daymeta.map(m=>m.label+(m.ev?'★':''));if(ph)ph.destroy();
+ ph=new Chart(document.getElementById('pcvh'),{type:'bar',data:{labels:labels,datasets:[{data:F.hall_daily,backgroundColor:F.hall_daily.map((v,i)=>F.daymeta[i].partial?'#f39c12':(v>=0?'#1e8449':'#c0392b')),borderRadius:3}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'合計 '+(c.parsed.y>0?'+':'')+c.parsed.y}}}}});}
+function renderSummary(){const S=D.summary;let mt='';S.model_rows.forEach(r=>{mt+='<tr><td style="text-align:left">'+r[0]+'</td><td class="'+cl(r[1])+'">'+sg(r[1])+'</td><td>'+r[2]+'</td><td class="'+cl(r[3])+'">'+sg(r[3])+'</td></tr>';});
+ function mk(a,p){let h='';a.forEach(x=>{h+='<tr><td>'+x[0]+'</td><td style="text-align:left">'+x[1]+'</td><td class="'+cl(x[2])+'">'+sg(x[2])+'</td>'+(p?'<td>'+x[3]+'</td>':'')+'</tr>';});return h;}
+ let tt='';S.todaytop.forEach(x=>{tt+='<tr><td>'+x[0]+'</td><td style="text-align:left">'+x[1]+'</td><td class="'+cl(x[2])+'">'+sg(x[2])+'</td></tr>';});
+ document.getElementById('summary').innerHTML='<h2>まとめ（確定日）</h2>'
+ +'<div class="cards"><div class="card"><div class="n '+cl(S.hall)+'">'+sg(S.hall)+'</div><div class="l">全台合計差枚</div></div>'
+ +'<div class="card"><div class="n">'+S.nall+'台</div><div class="l">対象台数</div></div></div>'
+ +'<h3 class="sec">機種別</h3><table><thead><tr><th>機種</th><th>合計</th><th>台数</th><th>平均</th></tr></thead><tbody>'+mt+'</tbody></table>'
+ +'<h3 class="sec">★安定台（勝ち5日以上）</h3><table><thead><tr><th>台</th><th>機種</th><th>合計</th><th>勝ち</th></tr></thead><tbody>'+mk(S.stable,1)+'</tbody></table>'
+ +'<h3 class="sec">好調 TOP6</h3><table><thead><tr><th>台</th><th>機種</th><th>合計</th><th>勝ち</th></tr></thead><tbody>'+mk(S.top,1)+'</tbody></table>'
+ +'<h3 class="sec">不調 WORST6</h3><table><thead><tr><th>台</th><th>機種</th><th>合計</th><th>勝ち</th></tr></thead><tbody>'+mk(S.worst,1)+'</tbody></table>'
+ +'<h3 class="sec">最新日 差枚TOP6</h3><table><thead><tr><th>台</th><th>機種</th><th>差枚</th></tr></thead><tbody>'+tt+'</tbody></table>'
+ +'<div class="note">合計より勝ち日数(安定度)で状態を掴む方が有効。将来を保証するものではありません。<br>データ元: DMMぱちタウン / P\'s CUBE。Boxの ジャグラー履歴.csv を毎回読み込み（右上の再読み込みで最新化）。</div>';}
+function goNum(s){if(!s)return null;var m=/1\/([\d.]+)/.exec(s);return m?parseFloat(m[1]):null;}
+function goCol(s){var v=goNum(s);if(v==null)return '#e6e6e6';if(v<=130)return '#12b886';if(v<=145)return '#7ac77a';if(v<=160)return '#ffd43b';if(v<=180)return '#ff922b';return '#ef6b6b';}
+function goLbl(v){if(v<=130)return '激熱';if(v<=145)return '好調';if(v<=160)return '中間';if(v<=180)return '不調';return '低調';}
+function addDays(dstr,n){var a=dstr.split('-');var dt=new Date(+a[0],+a[1]-1,+a[2]);dt.setDate(dt.getDate()+n);var y=dt.getFullYear(),m=('0'+(dt.getMonth()+1)).slice(-2),d=('0'+dt.getDate()).slice(-2);return y+'-'+m+'-'+d;}
+function computePatternStats(){const STRONG=145,WEAK=165,MING=2000;const order=['月','火','水','木','金','土','日'];
+ const bym={};RAW.forEach(r=>{const k=r['機種']+'|'+r['台番号'];(bym[k]=bym[k]||{})[r['日付']]=r;});
+ const upW={},dnW={},kpW={},totW={};order.forEach(w=>{upW[w]=0;dnW[w]=0;kpW[w]=0;totW[w]=0;});
+ let upEv=0,upNm=0,dEv=0,dNm=0;const pdUp=[],pdDn=[],pdKp=[];let nT=0;
+ function pp(d){var a=d.split('-');return new Date(+a[0],+a[1]-1,+a[2]);}
+ for(const k in bym){const dm=bym[k];const ds=Object.keys(dm).filter(d=>dm[d]['本日途中']!=='1').sort();
+  for(let i=1;i<ds.length;i++){const d0=ds[i-1],d1=ds[i];if((pp(d1)-pp(d0))/86400000!==1)continue;
+   const r0=dm[d0],r1=dm[d1];const g0=num(r0['累計ゲーム'])||0,g1=num(r1['累計ゲーム'])||0;if(g0<MING||g1<MING)continue;
+   const s0=goNum(r0['合成確率']),s1=goNum(r1['合成確率']);if(s0==null||s1==null)continue;
+   const st0=s0<=STRONG,wk0=s0>=WEAK,st1=s1<=STRONG,wk1=s1>=WEAK;
+   const w=wd(d1);nT++;totW[w]++;const pdv=num(r0['差枚'])||0;const ev=EVENT_DAYS.has(dom(d1));
+   if(wk0&&st1){upW[w]++;pdUp.push(pdv);ev?upEv++:upNm++;}
+   else if(st0&&wk1){dnW[w]++;pdDn.push(pdv);}
+   else if(st0&&st1){kpW[w]++;pdKp.push(pdv);}
+   ev?dEv++:dNm++;}}
+ return {upW:upW,dnW:dnW,kpW:kpW,totW:totW,pdUp:pdUp,pdDn:pdDn,pdKp:pdKp,upEv:upEv,upNm:upNm,dEv:dEv,dNm:dNm,nT:nT,order:order};}
+function pickTomorrowCandidates(){const F=D.full;const idx=F.daymeta.length-1;const cands=[];
+ D.model_order.forEach(m=>{D.model_machines[m].forEach(dai=>{const mc=F.machines[dai];
+  const s=mc.sabe[idx],g=mc.g[idx];if(g==null||g<800||s==null)return;
+  cands.push({dai:dai,model:mc.model,sabe:s,g:g,gou:mc.gou[idx]});});});
+ cands.sort((a,b)=>a.sabe-b.sabe);return cands.slice(0,5);}
+/* ---- ピックアップ方式の過去的中率(自動集計) ---- */
+function computePickAccuracy(){const STRONG=145;const dates=[...new Set(RAW.map(r=>r['日付']))].sort();
+ function pp(d){var a=d.split('-');return new Date(+a[0],+a[1]-1,+a[2]);}
+ const bym={};RAW.forEach(r=>{const k=r['機種']+'|'+r['台番号'];(bym[k]=bym[k]||{})[r['日付']]=r;});
+ let upHit=0,upTotal=0,upPnlSum=0,keepHit=0,keepTotal=0;
+ for(let di=0;di<dates.length-1;di++){const d0=dates[di],d1=dates[di+1];if((pp(d1)-pp(d0))/86400000!==1)continue;
+  const cands=[];for(const k in bym){const r0=bym[k][d0];if(!r0)continue;const s=num(r0['差枚']),g=num(r0['累計ゲーム']);if(g==null||g<800||s==null)continue;cands.push({k:k,sabe:s});}
+  cands.sort((a,b)=>a.sabe-b.sabe);const picks=cands.slice(0,5);
+  picks.forEach(p=>{const r1=bym[p.k][d1];if(!r1||r1['本日途中']==='1')return;const g1=goNum(r1['合成確率']);if(g1==null)return;
+   upTotal++;if(g1<=STRONG)upHit++;const s1=num(r1['差枚']);if(s1!=null)upPnlSum+=s1;});
+  if(di>=1){const dPrev=dates[di-1];for(const k in bym){const r0=bym[k][d0],rPrev=bym[k][dPrev];if(!r0||!rPrev)continue;
+    const g0=goNum(r0['合成確率']),gPrev=goNum(rPrev['合成確率']);if(g0==null||gPrev==null)continue;
+    if(g0<=STRONG&&gPrev<=STRONG){const r1=bym[k][d1];if(!r1||r1['本日途中']==='1')continue;const g1=goNum(r1['合成確率']);if(g1==null)continue;
+     keepTotal++;if(g1<=STRONG)keepHit++;}}}}
+ return {upHit:upHit,upTotal:upTotal,upRate:upTotal?Math.round(100*upHit/upTotal):null,upPnlAvg:upTotal?Math.round(upPnlSum/upTotal):null,
+  keepHit:keepHit,keepTotal:keepTotal,keepRate:keepTotal?Math.round(100*keepHit/keepTotal):null};}
+function tomorrowInfo(stats){const dates=[...new Set(RAW.map(r=>r['日付']))].sort();const latest=dates[dates.length-1];
+ const tmr=addDays(latest,1);const w=wd(tmr);const t=stats.totW[w]||0,u=stats.upW[w]||0;
+ return {date:tmr,wd:w,rate:t?Math.round(100*u/t):null,n:t,u:u};}
+/* ---- ヘッダー直下の常時表示バナー: 昨日の結果発表 + 明日の候補 ---- */
+function computeYesterdayReveal(){const F=D.full;const meta=F.daymeta;const STRONG=145;
+ const confIdx=[];for(let i=0;i<meta.length;i++){if(!meta[i].partial)confIdx.push(i);}
+ if(confIdx.length<2)return null;
+ const srcIdx=confIdx[confIdx.length-2],resIdx=confIdx[confIdx.length-1];
+ const srcLabel=F.dlabel[srcIdx],resLabel=F.dlabel[resIdx];
+ const cands=[];
+ D.model_order.forEach(m=>{D.model_machines[m].forEach(dai=>{const mc=F.machines[dai];
+  const s=mc.sabe[srcIdx],g=mc.g[srcIdx];if(g==null||g<800||s==null)return;
+  cands.push({dai:dai,model:mc.model,srcSabe:s,srcGou:mc.gou[srcIdx]});});});
+ cands.sort((a,b)=>a.srcSabe-b.srcSabe);
+ const picks=cands.slice(0,5).map(p=>{const mc=F.machines[p.dai];const resSabe=mc.sabe[resIdx],resGou=mc.gou[resIdx];
+  const v=goNum(resGou);const hit=(v!=null&&v<=STRONG);
+  return {dai:p.dai,model:p.model,srcSabe:p.srcSabe,resSabe:resSabe,resGou:resGou,hit:hit};});
+ const hits=picks.filter(p=>p.hit).length;
+ return {srcLabel:srcLabel,resLabel:resLabel,picks:picks,hits:hits,total:picks.length};
+}
+function renderCarry(){const F=D.full;const L=F.dlabel;const meta=F.daymeta;
+ const compIdx=[];for(let i=0;i<L.length;i++){if(!meta[i].partial)compIdx.push(i);}
+ const lastC=compIdx.length?compIdx[compIdx.length-1]:null;const prevC=compIdx.length>=2?compIdx[compIdx.length-2]:null;
+ const keep=[],up=[],down=[];
+ D.model_order.forEach(m=>{D.model_machines[m].forEach(dai=>{const mc=F.machines[dai];
+  const g1=(lastC!=null?goNum(mc.gou[lastC]):null);const g0=(prevC!=null?goNum(mc.gou[prevC]):null);
+  const s1=(g1!=null&&g1<=145),w1=(g1!=null&&g1>=165),s0=(g0!=null&&g0<=145),w0=(g0!=null&&g0>=165);
+  if(s1&&s0)keep.push([dai,mc.model,mc.gou[prevC],mc.gou[lastC]]);
+  else if(s1&&w0)up.push([dai,mc.model,mc.gou[prevC],mc.gou[lastC]]);
+  else if(w1&&s0)down.push([dai,mc.model,mc.gou[prevC],mc.gou[lastC]]);});});
+ function li(a){if(!a.length)return '<li style="color:#999">該当なし</li>';return a.map(x=>'<li><b>'+x[0]+'</b> '+x[1]+'　<span style="color:#888;font-size:11px">前日 '+(x[2]||'-')+' → 昨日 '+(x[3]||'-')+'</span></li>').join('');}
+ let head='<tr><th style="position:sticky;left:0;background:#f0f0f0;z-index:2">台</th>';
+ for(let i=0;i<L.length;i++){head+='<th>'+L[i].replace(/\(.\)/,'')+(meta[i].partial?'▶':'')+'</th>';}
+ head+='</tr>';
+ let body='';
+ D.model_order.forEach(m=>{body+='<tr><td colspan="'+(L.length+1)+'" style="text-align:left;background:#fbeee9;font-weight:bold;color:#c0392b">'+m+'</td></tr>';
+  D.model_machines[m].forEach(dai=>{const mc=F.machines[dai];let r='<tr><td style="position:sticky;left:0;background:#fff;font-weight:bold;z-index:1">'+dai+'</td>';
+   for(let i=0;i<L.length;i++){const g=mc.gou[i];const v=goNum(g);const t=(v==null?'–':(''+Math.round(v)));
+    r+='<td style="background:'+goCol(g)+';color:#111">'+t+(meta[i].partial?'▶':'')+'</td>';}
+   r+='</tr>';body+=r;});});
+ const stats=computePatternStats();const picks=pickTomorrowCandidates();const tmr=tomorrowInfo(stats);const acc=computePickAccuracy();
+ let pickRows='';picks.forEach((x,i)=>{pickRows+='<tr><td>'+(i+1)+'</td><td><b>'+x.dai+'</b></td><td style="text-align:left">'+x.model+'</td><td class="'+cl(x.sabe)+'">'+sg(x.sabe)+'</td><td>'+(x.gou||'-')+'</td><td>'+x.g+'</td></tr>';});
+ if(!picks.length)pickRows='<tr><td colspan="6" style="color:#999">まだ本日のデータが少なく判定できません</td></tr>';
+ const rev=computeYesterdayReveal();let revealHtml='';
+ if(rev){
+  let rrows='';rev.picks.forEach((x,i)=>{
+   rrows+='<tr><td>'+(i+1)+'</td><td><b>'+x.dai+'</b></td><td style="text-align:left">'+x.model+'</td>'
+    +'<td class="'+cl(x.srcSabe)+'">'+sg(x.srcSabe)+'</td>'
+    +'<td class="'+cl(x.resSabe)+'">'+(x.resSabe==null?'-':sg(x.resSabe))+'</td>'
+    +'<td>'+(x.resGou||'-')+'</td>'
+    +'<td>'+(x.hit?'<span style="color:#1e8449;font-weight:bold">◎的中(UP)</span>':'<span style="color:#999">✕ハズレ</span>')+'</td></tr>';});
+  if(!rev.picks.length)rrows='<tr><td colspan="7" style="color:#999">対象台なし</td></tr>';
+  revealHtml='<div class="revealbox" style="margin:0 0 10px"><h3 class="sec" style="margin-top:0">📢 昨日の結果発表（'+rev.srcLabel+'の予想 → '+rev.resLabel+'の結果）</h3>'
+   +'<div class="note">'+rev.srcLabel+'時点で選んだ「翌日UP候補」上位'+rev.total+'台が、'+rev.resLabel+'に実際どうなったか答え合わせ。的中＝合成確率が1/145以下(好調)に改善。<b class="hl">'+rev.hits+'/'+rev.total+'台的中</b></div>'
+   +'<table><thead><tr><th>順</th><th>台</th><th>機種</th><th>'+rev.srcLabel+'差枚(選定根拠)</th><th>'+rev.resLabel+'差枚(結果)</th><th>'+rev.resLabel+'合成(結果)</th><th>判定</th></tr></thead><tbody>'+rrows+'</tbody></table>'
+   +'<div class="note" style="margin-top:4px">📊 この方式の通算的中率: '+(acc.upTotal?(acc.upTotal+'件中 '+acc.upHit+'件('+acc.upRate+'%)'):'集計不足')+'</div></div>';
+ }else{
+  revealHtml='<div class="revealbox" style="margin:0 0 10px"><h3 class="sec" style="margin-top:0">📢 昨日の結果発表</h3><div class="note">確定日がまだ2日分たまっていないため、結果発表はまだ出せません。データが増え次第ここに表示されます。</div></div>';
+ }
+ document.getElementById('carry').innerHTML='<h2>据え置き / 設定変更の見きわめ</h2>'
+ +revealHtml
+ +'<div class="pickbox"><h3 class="sec" style="margin-top:0">🔮 明日、設定が変わりそうな台 ピックアップ</h3>'
+ +'<div class="note">本日（進行中）のデータで<b>大きくマイナス</b>の台を抽出。過去の遷移データでは「前日に大きく負けた台ほど翌日に設定UPで巻き返しやすい」傾向があるため、これらが明日の変更(UP)候補として狙い目です。明日は<b>'+tmr.wd+'曜日</b>'+(tmr.rate!=null?'（この曜日の過去UP率 <b>'+tmr.rate+'%</b>　'+tmr.u+'/'+tmr.n+'件）':'（曜日データが少なくまだ参考値なし）')+'。<b class="hl">あくまで遊びの予想です。ジャグラーは毎ゲーム独立抽選のため保証ではありません！</b></div>'
+ +'<table><thead><tr><th>順</th><th>台</th><th>機種</th><th>本日差枚(進行中)</th><th>合成</th><th>総回転</th></tr></thead><tbody>'+pickRows+'</tbody></table>'
+ +'<div class="note" style="margin-top:6px">📊 <b>この方式の過去的中率:</b> '+(acc.upTotal?('直近'+acc.upTotal+'件中 <b class="hl">'+acc.upHit+'件('+acc.upRate+'%)</b>が翌日に合成1/145以下(好調)へ改善。翌日平均差枚 <b class="'+cl(acc.upPnlAvg)+'">'+sg(acc.upPnlAvg)+'</b>'):'まだ判定できる遷移データがありません')+'</div></div>'
+ +'<div class="note">昨日（最新の確定日 <b>'+(lastC!=null?L[lastC]:'-')+'</b>）と前日の<b>合成確率</b>を比べて、店が設定を<b>据え置いた</b>か<b>変えた</b>かの目安を出します。合成が軽い(1/の数字が小さい)＝高設定寄り。判定しきい値: 好調≦1/145 ／ 不調≧1/165。</div>'
+ +'<div class="cards"><div class="card" style="flex:1 1 100%;text-align:left;min-width:0"><div class="l" style="font-size:12px;color:#1e8449;font-weight:bold">● 据え置き濃厚（好調が2日連続 → 今日も継続に期待）</div><ul>'+li(keep)+'</ul>'
+ +'<div class="note" style="margin-top:2px">📊 過去的中率: '+(acc.keepTotal?(acc.keepHit+'/'+acc.keepTotal+'件 ('+acc.keepRate+'%) が翌日も好調(合成1/145以下)を継続'):'データ不足')+'</div></div></div>'
+ +'<div class="cards"><div class="card" style="flex:1 1 300px;text-align:left;min-width:0"><div class="l" style="font-size:12px;color:#c0392b;font-weight:bold">▲ 設定UPの可能性（不調 → 好調に変化）</div><ul>'+li(up)+'</ul></div>'
+ +'<div class="card" style="flex:1 1 300px;text-align:left;min-width:0"><div class="l" style="font-size:12px;color:#888;font-weight:bold">▼ 設定DOWNの可能性（好調 → 不調に変化）</div><ul>'+li(down)+'</ul></div></div>'
+ +'<h3 class="sec">合成確率ヒートマップ（全日）</h3>'
+ +'<div class="note"><span style="background:#12b886;padding:1px 6px">激熱</span> <span style="background:#7ac77a;padding:1px 6px">好調</span> <span style="background:#ffd43b;padding:1px 6px">中間</span> <span style="background:#ff922b;padding:1px 6px">不調</span> <span style="background:#ef6b6b;padding:1px 6px">低調</span>　＝合成確率(数字は1/◯◯の分母)。<b>緑が横に続く＝据え置き</b>、<b>色が急に変わる境目＝設定変更の疑い</b>。▶=本日途中。</div>'
+ +'<div style="overflow:auto;max-height:70vh"><table style="font-size:10.5px">'+'<thead>'+head+'</thead><tbody>'+body+'</tbody></table></div>'
+ +'<div class="note">※合成確率は1日だけでは荒れます。連続した色の流れで判断を。ジャグラーは毎ゲーム独立抽選のため、これは傾向の目安であり将来を保証しません。より確実な設定推測は「設定・イベント分析」タブのREG率も併用してください。</div>'
+ +'<h3 class="sec">設定変更パターン分析（過去データの傾向）</h3><div id="patternBox"></div>';renderPatterns(stats);}
+function renderPatterns(stats){
+ const order=stats.order;
+ const avg=l=>l.length?Math.round(l.reduce((a,b)=>a+b,0)/l.length):null;
+ let wr='';order.forEach(w=>{const t=stats.totW[w];if(!t)return;const rate=Math.round(100*stats.upW[w]/t);const hot=rate>=20?' style="background:#eafbea;font-weight:bold"':'';
+  wr+='<tr'+hot+'><td>'+w+'</td><td>'+stats.upW[w]+' / '+t+'</td><td>'+rate+'%</td><td>'+stats.dnW[w]+'</td><td>'+stats.kpW[w]+'</td></tr>';});
+ const evr=stats.dEv?Math.round(100*stats.upEv/stats.dEv):0,nmr=stats.dNm?Math.round(100*stats.upNm/stats.dNm):0;
+ document.getElementById('patternBox').innerHTML=
+  '<div class="cards"><div class="card" style="flex:1 1 260px;text-align:left"><b>① 前日差枚との関係</b>'
+  +'<table><tbody><tr><td style="text-align:left">UP(不調→好調)の前日差枚 平均</td><td class="'+(avg(stats.pdUp)<0?'neg':'pos')+'">'+(avg(stats.pdUp)==null?'-':sg(avg(stats.pdUp)))+'</td></tr>'
+  +'<tr><td style="text-align:left">DOWN(好調→不調)の前日</td><td>'+(avg(stats.pdDn)==null?'-':sg(avg(stats.pdDn)))+'</td></tr>'
+  +'<tr><td style="text-align:left">KEEP高(好調継続)の前日</td><td>'+(avg(stats.pdKp)==null?'-':sg(avg(stats.pdKp)))+'</td></tr></tbody></table>'
+  +'<div class="note">→ <b class="hl">前日に大きくマイナスの台ほど翌日UPしやすい</b>。狙いは「昨日ボコられてた台」。上の🔮ピックアップはこの傾向を使っています。</div></div>'
+  +'<div class="card" style="flex:1 1 260px;text-align:left"><b>② イベント日 vs 通常日</b>'
+  +'<table><tbody><tr><td style="text-align:left">イベント日 UP率</td><td>'+evr+'% ('+stats.upEv+'/'+stats.dEv+')</td></tr>'
+  +'<tr><td style="text-align:left">通常日 UP率</td><td>'+nmr+'% ('+stats.upNm+'/'+stats.dNm+')</td></tr></tbody></table>'
+  +'<div class="note">→ ゾロ目日イベントは通常日と差が小さい。<b class="hl">曜日のほうが効く</b>。</div></div></div>'
+  +'<table><thead><tr><th>曜日</th><th>UP / 遷移</th><th>UP率</th><th>DOWN</th><th>KEEP高</th></tr></thead><tbody>'+wr+'</tbody></table>'
+  +'<div class="note">対象遷移 '+stats.nT+'件（両日2000G以上／合成確率で判定：好調≦1/145・不調≧1/165）。緑=UP率20%以上の曜日。ジャグラーは毎ゲーム独立抽選のため、これは「店がいつ設定を入れるか」の傾向で将来を保証しません。日数が増えるほど精度UP。</div>';
+}
+async function boot(){
+ try{
+  const res=await fetch("juggler.csv?t="+Date.now(),{cache:"no-store"});
+  if(!res.ok)throw new Error("juggler.csv の取得に失敗 (HTTP "+res.status+")");
+  let txt=await res.text();
+  if(!txt||txt.indexOf("日付")<0)throw new Error("CSV内容が取得できませんでした");
+  const rows=parseCSV(txt);
+  RAW=rows;
+  D=buildData(rows);
+  document.getElementById('hmeta').innerHTML='直近'+D.period+'　全'+D.summary.nall+'台　｜　縦軸=差枚　｜　左の台番号を押すとグラフが出ます（緑=好調/赤=不調）<br>'+(D.full.partial?('※最新日('+D.full.partial+')は途中経過。傾向は確定日('+D.comp+')で判定。'):'※現在、途中経過中の日はありません（最新日まで確定データ）。')+'ページを再読み込みすると最新CSVを読み直します。';
+  document.getElementById('status').classList.add('hidden');
+  document.getElementById('viewM').classList.remove('hidden');
+  buildSide();
+ }catch(e){
+  document.getElementById('status').innerHTML='読み込みに失敗しました: '+(e&&e.message?e.message:e)+'<br>同じフォルダに juggler.csv があるか確認してください。';
+  console.error("boot error",e);
+ }
+}
+boot();
+</script></body></html>
