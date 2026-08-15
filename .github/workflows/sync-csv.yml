@@ -1,0 +1,38 @@
+name: sync-csv
+
+on:
+  schedule:
+    - cron: '30 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download CSV from Box
+        run: |
+          HDR="日付,機種,台番号"
+          U1="https://app.box.com/index.php?rm=box_download_shared_file&shared_name=meqshn8ivlvdhxji556urj2ob31lrmvs&file_id=f_2354582944522"
+          ok=0
+          if curl -sSL -o new.csv "$U1"; then
+            if head -1 new.csv | grep -q "$HDR"; then ok=1; echo "download OK"; fi
+          fi
+          if [ "$ok" != 1 ]; then echo "取得失敗。先頭300バイト:"; head -c 300 new.csv; echo; exit 1; fi
+          n=$(wc -l < new.csv)
+          echo "lines=$n"
+          [ "$n" -gt 100 ] || { echo "行数が少なすぎます"; exit 1; }
+          mv new.csv juggler.csv
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet juggler.csv; then echo "変更なし"; exit 0; fi
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add juggler.csv
+          git commit -m "update juggler.csv"
+          git push
