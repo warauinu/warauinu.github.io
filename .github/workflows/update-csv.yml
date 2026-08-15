@@ -1,0 +1,35 @@
+name: update-csv
+
+on:
+  schedule:
+    - cron: '30 16 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download CSV from Box
+        run: |
+          curl -sSL --fail -o new.csv "https://app.box.com/shared/static/meqshn8ivlvdhxji556urj2ob31lrmvs.csv"
+          echo "--- head ---"
+          head -1 new.csv
+          head -1 new.csv | grep -q "日付,機種,台番号" || { echo "CSVではない内容が返りました"; exit 1; }
+          n=$(wc -l < new.csv)
+          echo "lines=$n"
+          [ "$n" -gt 100 ] || { echo "行数が少なすぎます"; exit 1; }
+          mv new.csv juggler.csv
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet juggler.csv; then echo "変更なし"; exit 0; fi
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add juggler.csv
+          git commit -m "update juggler.csv"
+          git push
