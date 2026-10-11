@@ -1,5 +1,7 @@
 name: sync-csv
 
+# juggler.csv（このリポジトリ）が本体。Box の CSV は「バックアップ元」として、
+# リポジトリに無い行だけを足す（上書き・削除はしない）。
 on:
   schedule:
     - cron: '30 16 * * *'
@@ -14,19 +16,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download CSV from Box
+      - name: Merge Box CSV (missing rows only)
         run: |
-          HDR="日付,機種,台番号"
           U1="https://app.box.com/index.php?rm=box_download_shared_file&shared_name=meqshn8ivlvdhxji556urj2ob31lrmvs&file_id=f_2354582944522"
-          ok=0
-          if curl -sSL -o new.csv "$U1"; then
-            if head -1 new.csv | grep -q "$HDR"; then ok=1; echo "download OK"; fi
+          if curl -sSL -o box.csv "$U1" && head -1 box.csv | grep -q "日付,機種,台番号"; then
+            python3 - <<'PY'
+          import csv
+          def load(p):
+              with open(p, encoding='utf-8-sig', newline='') as f:
+                  r = list(csv.reader(f))
+              return r[0], [x for x in r[1:] if len(x) >= 3]
+          h, repo = load('juggler.csv')
+          _, box = load('box.csv')
+          k = lambda x: (x[1], x[2], x[0])
+          m = {k(x): x for x in box}
+          for x in repo:
+              m[k(x)] = x
+          added = len(m) - len({k(x) for x in repo})
+          if added > 0:
+              rows = sorted(m.values(), key=lambda x: (x[1], x[2], x[0]))
+              with open('juggler.csv', 'w', encoding='utf-8', newline='') as f:
+                  w = csv.writer(f, lineterminator='\n')
+                  w.writerow(h)
+                  w.writerows(rows)
+          print('repo rows', len(repo), 'added from Box', added)
+          PY
+          else
+            echo "Box取得失敗（スキップ。juggler.csvはそのまま）"
           fi
-          if [ "$ok" != 1 ]; then echo "取得失敗。先頭300バイト:"; head -c 300 new.csv; echo; exit 1; fi
-          n=$(wc -l < new.csv)
-          echo "lines=$n"
-          [ "$n" -gt 100 ] || { echo "行数が少なすぎます"; exit 1; }
-          mv new.csv juggler.csv
+          rm -f box.csv
 
       - name: Commit if changed
         run: |
@@ -34,5 +52,5 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add juggler.csv
-          git commit -m "update juggler.csv"
+          git commit -m "merge missing rows from Box"
           git push
